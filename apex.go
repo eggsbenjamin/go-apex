@@ -8,6 +8,8 @@ import (
 	"io"
 	"log"
 	"os"
+
+	"github.com/eggsbenjamin/go-apex/lambda"
 )
 
 // Handler handles Lambda events.
@@ -73,7 +75,7 @@ type input struct {
 type output struct {
 	// The boomeranged ID from the caller
 	ID    string      `json:"id,omitempty"`
-	Error string      `json:"error,omitempty"`
+	Error interface{} `json:"error,omitempty"`
 	Value interface{} `json:"value,omitempty"`
 }
 
@@ -106,7 +108,11 @@ func (m *manager) Start() {
 		out := output{ID: msg.ID, Value: v}
 
 		if err != nil {
-			out.Error = err.Error()
+			if lErr, ok := err.(*lambda.Error); ok {
+				out.Error = lErr
+			} else {
+				out.Error = err.Error()
+			}
 		}
 
 		if err := enc.Encode(out); err != nil {
